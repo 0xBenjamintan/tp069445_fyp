@@ -79,7 +79,14 @@ export default function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-2 pt-0 md:p-4 md:pt-0">
-                <Button size="sm" className="w-full">
+                <Button
+                  size="sm"
+                  className="w-full"
+                  onClick={() =>
+                    (window.location.href =
+                      "https://github.com/0xBenjamintan/tp069445_fyp")
+                  }
+                >
                   GitHub
                 </Button>
               </CardContent>
@@ -138,7 +145,14 @@ export default function Dashboard() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <Button size="sm" className="w-full">
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      onClick={() =>
+                        (window.location.href =
+                          "https://github.com/0xBenjamintan/tp069445_fyp")
+                      }
+                    >
                       GitHub
                     </Button>
                   </CardContent>
