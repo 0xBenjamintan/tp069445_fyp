@@ -11,17 +11,26 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { createThirdwebClient } from "thirdweb";
+import { createThirdwebClient, getContract, readContract } from "thirdweb";
 import { ConnectButton } from "thirdweb/react";
-
+import { defineChain } from "thirdweb/chains";
 import { inAppWallet } from "thirdweb/wallets";
 import { arbitrumSepolia } from "thirdweb/chains";
+import { ethers } from "ethers";
+import { useEffect, useState } from "react";
 
 export const description =
   "2FA-ENABLED MULTISIG WALLET WITH SEAMLESS SOCIAL & BIOMETRIC LOGINS";
 
 const client = createThirdwebClient({
   clientId: "e4fe35424238e85ff5a4d6b33b04e8f5",
+});
+
+// connect to your contract
+const contract = getContract({
+  client,
+  chain: defineChain(421614),
+  address: "0xc3Ba5bC71341Ea55FAE5b388fB4f37D3d7CC3a60",
 });
 
 const wallets = [
@@ -41,6 +50,78 @@ const wallets = [
 ];
 
 export default function Dashboard() {
+  const [balance, setBalance] = useState(null);
+  const [admin1, setAdmin1] = useState(null);
+  const [admin2, setAdmin2] = useState(null);
+  const [transactionCounter, setTransactionCounter] = useState(null);
+
+  useEffect(() => {
+    async function fetchTransactionCounter() {
+      try {
+        const data = await readContract({
+          contract,
+          method: "function transactionCounter() view returns (uint256)",
+          params: [],
+        });
+        setTransactionCounter(data);
+      } catch (error) {
+        console.error("Error fetching transaction counter:", error);
+      }
+    }
+    fetchTransactionCounter();
+  }, []);
+  console.log("tx", transactionCounter);
+
+  useEffect(() => {
+    async function fetchBalance() {
+      try {
+        const data = await readContract({
+          contract,
+          method: "function checkBalance() view returns (uint256)",
+          params: [],
+        });
+        setBalance(ethers.utils.formatEther(data.toString()));
+      } catch (error) {
+        console.error("Error fetching balance:", error);
+      }
+    }
+
+    fetchBalance();
+  }, []);
+  console.log(balance);
+
+  useEffect(() => {
+    async function fetchAdmin1() {
+      try {
+        const data = await readContract({
+          contract,
+          method: "function admin1() view returns (address)",
+          params: [],
+        });
+        setAdmin1(data);
+      } catch (error) {
+        console.error("Error fetching admin1:", error);
+      }
+    }
+    fetchAdmin1();
+  }, []);
+
+  useEffect(() => {
+    async function fetchAdmin2() {
+      try {
+        const data = await readContract({
+          contract,
+          method: "function admin2() view returns (address)",
+          params: [],
+        });
+        setAdmin2(data);
+      } catch (error) {
+        console.error("Error fetching admin2:", error);
+      }
+    }
+    fetchAdmin2();
+  }, []);
+
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <div className="hidden border-r bg-muted/40 md:block">
@@ -56,15 +137,33 @@ export default function Dashboard() {
               <div className="mb-4">
                 <h1 className="text-2xl font-semibold mb-2">Owner Details</h1>
                 <div className="text-md text-muted-foreground">
-                  <p>Owner 1: 0x1234...5678</p>
-                  <p>Owner 2: 0x8765...4321</p>
+                  {admin1 && admin2 ? (
+                    <>
+                      <p>
+                        Owner 1: {admin1.slice(0, 6)}...{admin1.slice(-4)}
+                      </p>
+                      <p>
+                        Owner 2: {admin2.slice(0, 6)}...{admin2.slice(-4)}
+                      </p>
+                    </>
+                  ) : (
+                    <p>Loading...</p>
+                  )}
                 </div>
               </div>
               <div className="mt-4">
                 <h1 className="text-2xl font-semibold mb-2">Account</h1>
                 <div className="text-md text-muted-foreground">
-                  <p>Total Balance: 1.5 ETH</p>
-                  <p>Transactions: 42</p>
+                  {balance !== null ? (
+                    <p>Balance: {balance} ETH</p>
+                  ) : (
+                    <p>Loading...</p>
+                  )}
+                  {transactionCounter !== null ? (
+                    <p>Transactions: {transactionCounter}</p>
+                  ) : (
+                    <p>Loading...</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -122,15 +221,33 @@ export default function Dashboard() {
                       Owner Details
                     </h1>
                     <div className="text-md text-muted-foreground">
-                      <p>Owner 1: 0x1234...5678</p>
-                      <p>Owner 2: 0x8765...4321</p>
+                      {admin1 && admin2 ? (
+                        <>
+                          <p>
+                            Owner 1: {admin1.slice(0, 6)}...{admin1.slice(-4)}
+                          </p>
+                          <p>
+                            Owner 2: {admin2.slice(0, 6)}...{admin2.slice(-4)}
+                          </p>
+                        </>
+                      ) : (
+                        <p>Loading...</p>
+                      )}
                     </div>
                   </div>
                   <div className="mt-4">
                     <h1 className="text-2xl font-semibold mb-2">Account</h1>
                     <div className="text-md text-muted-foreground">
-                      <p>Total Balance: 1.5 ETH</p>
-                      <p>Transactions: 42</p>
+                      {balance !== null ? (
+                        <p>Balance: {balance} ETH</p>
+                      ) : (
+                        <p>Loading...</p>
+                      )}
+                      {transactionCounter !== null ? (
+                        <p>Transactions: {transactionCounter}</p>
+                      ) : (
+                        <p>Loading...</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -174,6 +291,7 @@ export default function Dashboard() {
             accountAbstraction={{
               chain: arbitrumSepolia, // replace with the chain you want
               sponsorGas: true,
+              factoryAddress: "0x96bdAb950e15670c7BB76eBe32CD545177cA78D8",
             }}
           />
         </header>
@@ -185,16 +303,14 @@ export default function Dashboard() {
           </div>
           <div className="mb-4">
             <div className="flex flex-col space-y-4">
+              <p>Enter Recipient Address:</p>
               <Input
                 type="text"
-                placeholder="Enter address"
+                placeholder="0x3dd4....hr43"
                 className="w-[auto]"
               />
-              <Input
-                type="number"
-                placeholder="Enter amount"
-                className="w-full"
-              />
+              <p>Enter Transfer Amount:</p>
+              <Input type="number" placeholder="0.01" className="w-full" />
               <Button className="w-full">Send Transaction</Button>
             </div>
           </div>
