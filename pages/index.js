@@ -496,8 +496,8 @@ export default function Dashboard() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {tx.success ? (
-                        <Badge colorScheme={"green"}>Success</Badge>
+                      {tx.finalized ? (
+                        <Badge variant="success">Success</Badge>
                       ) : (
                         <Badge variant="destructive">Pending</Badge>
                       )}
