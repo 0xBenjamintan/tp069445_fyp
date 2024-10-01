@@ -1,15 +1,5 @@
 import Link from "next/link";
-import {
-  Home,
-  LineChart,
-  Menu,
-  Package,
-  Package2,
-  ShoppingCart,
-  Users,
-  Clover,
-} from "lucide-react";
-
+import { Menu, Clover } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,9 +11,34 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { createThirdwebClient } from "thirdweb";
+import { ConnectButton } from "thirdweb/react";
+
+import { inAppWallet } from "thirdweb/wallets";
+import { arbitrumSepolia } from "thirdweb/chains";
 
 export const description =
   "2FA-ENABLED MULTISIG WALLET WITH SEAMLESS SOCIAL & BIOMETRIC LOGINS";
+
+const client = createThirdwebClient({
+  clientId: "e4fe35424238e85ff5a4d6b33b04e8f5",
+});
+
+const wallets = [
+  inAppWallet({
+    auth: {
+      options: [
+        "google",
+        "telegram",
+        "email",
+        "x",
+        "passkey",
+        "phone",
+        "facebook",
+      ],
+    },
+  }),
+];
 
 export default function Dashboard() {
   return (
@@ -133,9 +148,20 @@ export default function Dashboard() {
           </Sheet>
           {/* for spacing purposes */}
           <div className="w-full flex-1"></div>
-          <button className="bg-blue-500 text-white px-4 py-2 rounded-md justify-end">
-            test
-          </button>
+          <ConnectButton
+            client={client}
+            wallets={wallets}
+            theme={"light"}
+            connectButton={{ label: "Connect Wallet" }}
+            connectModal={{
+              size: "compact",
+              showThirdwebBranding: false,
+            }}
+            accountAbstraction={{
+              chain: arbitrumSepolia, // replace with the chain you want
+              sponsorGas: true,
+            }}
+          />
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
           <div className="flex items-center">
