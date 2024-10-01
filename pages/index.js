@@ -1,7 +1,5 @@
 import Link from "next/link";
 import { Menu, Clover } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -9,15 +7,32 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { createThirdwebClient, getContract, readContract } from "thirdweb";
-import { ConnectButton } from "thirdweb/react";
+import {
+  createThirdwebClient,
+  getContract,
+  readContract,
+  prepareContractCall,
+  sendTransaction,
+} from "thirdweb";
+import { ConnectButton, useActiveAccount } from "thirdweb/react";
 import { defineChain } from "thirdweb/chains";
 import { inAppWallet } from "thirdweb/wallets";
 import { arbitrumSepolia } from "thirdweb/chains";
 import { ethers } from "ethers";
 import { useEffect, useState } from "react";
+import CreateTransfer from "@/components/CreateTransfer";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { ToastContainer, toast } from "react-toastify";
 
 export const description =
   "2FA-ENABLED MULTISIG WALLET WITH SEAMLESS SOCIAL & BIOMETRIC LOGINS";
@@ -30,7 +45,7 @@ const client = createThirdwebClient({
 const contract = getContract({
   client,
   chain: defineChain(421614),
-  address: "0xc3Ba5bC71341Ea55FAE5b388fB4f37D3d7CC3a60",
+  address: "0x4cfb068648e454643863303c0A8fE6dE7304B47A",
 });
 
 const wallets = [
@@ -54,6 +69,32 @@ export default function Dashboard() {
   const [admin1, setAdmin1] = useState(null);
   const [admin2, setAdmin2] = useState(null);
   const [transactionCounter, setTransactionCounter] = useState(null);
+  const [transactions, setTransactions] = useState([]);
+
+  const admin1Wallet = useActiveAccount();
+  const admin2Wallet = useActiveAccount();
+
+  const isAdmin1 = admin1Wallet?.address === admin1;
+  const isAdmin2 = admin2Wallet?.address === admin2;
+
+  useEffect(() => {
+    async function fetchTransactions() {
+      try {
+        const data = await readContract({
+          contract,
+          method:
+            "function fetchTransferRequests() view returns ((address recipient, uint256 value, bool approvedByAdminOne, bool approvedByAdminTwo, bool finalized)[])",
+          params: [],
+        });
+        setTransactions(data);
+      } catch (error) {
+        console.error("Error fetching transactions:", error);
+      }
+    }
+
+    fetchTransactions();
+  }, []);
+  console.log("tx", transactions);
 
   // fetch transaction counter
   useEffect(() => {
@@ -71,7 +112,7 @@ export default function Dashboard() {
     }
     fetchTransactionCounter();
   }, []);
-  console.log("tx", transactionCounter);
+  // console.log("tx", transactionCounter);
 
   // fetch balance
   useEffect(() => {
@@ -90,7 +131,7 @@ export default function Dashboard() {
 
     fetchBalance();
   }, []);
-  console.log(balance);
+  // console.log(balance);
 
   // fetch admin1 address
   useEffect(() => {
@@ -200,16 +241,14 @@ export default function Dashboard() {
       <div className="flex flex-col">
         <header className="flex h-14 items-center gap-4 border-b bg-muted/100 px-4 lg:h-[60px] lg:px-6">
           <Sheet>
-            <SheetTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className="shrink-0 md:hidden"
-              >
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle navigation menu</span>
-              </Button>
-            </SheetTrigger>
+            <div className="block lg:hidden">
+              <SheetTrigger asChild>
+                <Button variant="ghost">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Toggle navigation menu</span>
+                </Button>
+              </SheetTrigger>
+            </div>
             <SheetContent side="left" className="flex flex-col">
               <nav className="grid gap-2 text-lg font-medium">
                 <Link
@@ -300,38 +339,173 @@ export default function Dashboard() {
           />
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-          <div className="flex items-center">
-            <h1 className="text-lg font-semibold md:text-2xl">
-              Send Transaction
-            </h1>
-          </div>
-          <div className="mb-4">
-            <div className="flex flex-col space-y-4">
-              <p>Enter Recipient Address:</p>
-              <Input
-                type="text"
-                placeholder="0x3dd4....hr43"
-                className="w-[auto]"
-              />
-              <p>Enter Transfer Amount:</p>
-              <Input type="number" placeholder="0.01" className="w-full" />
-              <Button className="w-full">Send Transaction</Button>
-            </div>
-          </div>
+          <CreateTransfer />
           <div className="flex items-center">
             <h1 className="text-lg font-semibold md:text-2xl">
               Transaction Record
             </h1>
           </div>
-          <div
-            className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm"
-            x-chunk="dashboard-02-chunk-1"
-          >
-            <div className="flex flex-col items-center gap-1 text-center">
-              <h3 className="text-xl font-bold tracking-tight">
-                You have no transaction record
-              </h3>
-            </div>
+          <div className="flex flex-1 rounded-lg border border-dashed shadow-sm p-4 lg:p-8">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Recipient</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Admin 1 Approved</TableHead>
+                  <TableHead>Admin 2 Approved</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {transactions?.map((tx, index) => (
+                  <TableRow key={index}>
+                    <TableCell>
+                      {tx.recipient.slice(0, 6)}...{tx.recipient.slice(-4)}
+                    </TableCell>
+                    <TableCell>
+                      {ethers.utils.formatEther(tx.value)} ETH
+                    </TableCell>
+                    <TableCell>
+                      {tx.approvedByAdminOne === false ? (
+                        <Button
+                          disabled={!isAdmin1}
+                          onClick={async () => {
+                            try {
+                              const transaction = await prepareContractCall({
+                                contract,
+                                method:
+                                  "function approveTransferRequest(uint256 _requestId)",
+                                params: [index],
+                              });
+                              toast.info("Transaction Pending", {
+                                position: "bottom-center",
+                                autoClose: 5000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                theme: "light",
+                              });
+                              const { transactionHash } = await sendTransaction(
+                                {
+                                  transaction,
+                                  account: admin1Wallet,
+                                }
+                              );
+                              toast.success(
+                                `Transaction successful with hash:\nhttps://sepolia.arbiscan.io/tx/${transactionHash}`,
+                                {
+                                  position: "bottom-center",
+                                  autoClose: 5000,
+                                  hideProgressBar: false,
+                                  closeOnClick: true,
+                                  pauseOnHover: true,
+                                  draggable: true,
+                                  progress: undefined,
+                                  theme: "light",
+                                }
+                              );
+                            } catch (error) {
+                              console.error(
+                                "Error sending transaction:",
+                                error
+                              );
+                              toast.error("Error sending transaction", {
+                                position: "bottom-center",
+                                autoClose: 5000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                theme: "light",
+                              });
+                            }
+                          }}
+                        >
+                          Pending
+                        </Button>
+                      ) : (
+                        <Badge variant="secondary">Approved</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {tx.approvedByAdminTwo === false ? (
+                        <Button
+                          disabled={!isAdmin2}
+                          onClick={async () => {
+                            try {
+                              const transaction = await prepareContractCall({
+                                contract,
+                                method:
+                                  "function approveTransferRequest(uint256 _requestId)",
+                                params: [index],
+                              });
+                              toast.info("Transaction Pending", {
+                                position: "bottom-center",
+                                autoClose: 5000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                theme: "light",
+                              });
+                              const { transactionHash } = await sendTransaction(
+                                {
+                                  transaction,
+                                  account: admin1Wallet,
+                                }
+                              );
+                              toast.success(
+                                `Transaction successful with hash:\nhttps://sepolia.arbiscan.io/tx/${transactionHash}`,
+                                {
+                                  position: "bottom-center",
+                                  autoClose: 5000,
+                                  hideProgressBar: false,
+                                  closeOnClick: true,
+                                  pauseOnHover: true,
+                                  draggable: true,
+                                  progress: undefined,
+                                  theme: "light",
+                                }
+                              );
+                            } catch (error) {
+                              console.error(
+                                "Error sending transaction:",
+                                error
+                              );
+                              toast.error("Error sending transaction", {
+                                position: "bottom-center",
+                                autoClose: 5000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                theme: "light",
+                              });
+                            }
+                          }}
+                        >
+                          Pending
+                        </Button>
+                      ) : (
+                        <Badge variant="secondary">Approved</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {tx.success ? (
+                        <Badge colorScheme={"green"}>Success</Badge>
+                      ) : (
+                        <Badge variant="destructive">Pending</Badge>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         </main>
       </div>

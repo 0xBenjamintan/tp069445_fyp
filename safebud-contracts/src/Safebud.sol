@@ -21,7 +21,7 @@ contract Safebud {
 
     constructor() {
         admin1 = address(0xaCBE1de971FA3dE3E65b1475FEF89Fe9B248103f);
-        admin2 = address(0x640Ab39256A9D6cCc9bA38DA086F074E1BCa8d9b);
+        admin2 = address(0x475d495E6122DE4DD63461aCCcF8f7512C70367D);
     }
 
     modifier onlyAdmins() {

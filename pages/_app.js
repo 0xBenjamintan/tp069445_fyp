@@ -1,6 +1,7 @@
 import "@/styles/globals.css";
 import { ThirdwebProvider } from "thirdweb/react";
 import { ArbitrumSepolia } from "@thirdweb-dev/chains";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function App({ Component, pageProps }) {
   return (
