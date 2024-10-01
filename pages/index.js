@@ -55,6 +55,7 @@ export default function Dashboard() {
   const [admin2, setAdmin2] = useState(null);
   const [transactionCounter, setTransactionCounter] = useState(null);
 
+  // fetch transaction counter
   useEffect(() => {
     async function fetchTransactionCounter() {
       try {
@@ -72,6 +73,7 @@ export default function Dashboard() {
   }, []);
   console.log("tx", transactionCounter);
 
+  // fetch balance
   useEffect(() => {
     async function fetchBalance() {
       try {
@@ -90,6 +92,7 @@ export default function Dashboard() {
   }, []);
   console.log(balance);
 
+  // fetch admin1 address
   useEffect(() => {
     async function fetchAdmin1() {
       try {
@@ -106,6 +109,7 @@ export default function Dashboard() {
     fetchAdmin1();
   }, []);
 
+  // fetch admin2 address
   useEffect(() => {
     async function fetchAdmin2() {
       try {
